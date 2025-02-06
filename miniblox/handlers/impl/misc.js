@@ -6,9 +6,14 @@ let client, entity, connect;
 
 const self = class ChatHandler extends Handler {
 	miniblox(gameType) {
+		// http://prismarinejs.github.io/minecraft-data/?d=protocol&v=1.8#play.toClient.types.packet_chat
+		// http in 2025 idk lol
 		ClientSocket.on('CPacketMessage', packet => {
 			if (packet.text) {
-				client.write('chat', {message: JSON.stringify({text: translateText(packet.text)})});
+				client.write('chat', {
+					message: JSON.stringify({text: translateText(packet.text)}),
+					position: packet.id == undefined ? 1 : 0 // 0 = chat, 1 = system, 2 = above hotbar
+				});
 				if (packet.id == undefined && packet.text.includes('Summary')) {
 					client.write('chat', {
 						message: JSON.stringify({
@@ -23,7 +28,8 @@ const self = class ChatHandler extends Handler {
 									}
 								},
 								' to play again!'
-							]
+							],
+							position: 1
 						})
 					});
 				}
@@ -53,10 +59,16 @@ const self = class ChatHandler extends Handler {
 			} else if (msg.startsWith('/login')) {
 				fs.writeFile('./login.token', packet.message.split(' ')[1] ?? '', (err) => {
 					if (err) {
-						client.write('chat', {message: JSON.stringify({text: translateText('\\red\\Failed to save file!' + err.message)})});
+						client.write('chat', {
+							message: JSON.stringify({text: translateText('\\red\\Failed to save file!' + err.message)}),
+							position: 1
+						});
 						throw err;
 					}
-					client.write('chat', {message: JSON.stringify({text: translateText('\\green\\Successfully logged in! Rejoin the game.')})});
+					client.write('chat', {
+						message: JSON.stringify({text: translateText('\\green\\Successfully logged in! Rejoin the game.')}),
+						position: 1
+					});
 				});
 				return;
 			} else if (msg.startsWith('/join')) {
@@ -72,7 +84,12 @@ const self = class ChatHandler extends Handler {
 						pitch: 0,
 						flags: 24
 					});
-					client.write('chat', {message: JSON.stringify({text: translateText('\\green\\Resynced!')})});
+					client.write(
+						'chat', {
+							message: JSON.stringify({text: translateText('\\green\\Resynced!')}),
+							position: 1
+						}
+					);
 				}
 				return;
 			}
